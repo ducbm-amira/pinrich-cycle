@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "pinrich-suite",
+  "description": "Internal Amira/Pinrich workflow plugin marketplace (self-hosted, single plugin).",
+  "owner": {
+    "name": "Amira / Pinrich team"
+  },
+  "plugins": [
+    {
+      "name": "pinrich-suite",
+      "description": "Pinrich/Amira dev-workflow skill suite: /pinrich-cycle orchestrator + 10 sibling skills.",
+      "source": ".",
+      "category": "development",
+      "version": "0.1.0"
+    }
+  ]
+}

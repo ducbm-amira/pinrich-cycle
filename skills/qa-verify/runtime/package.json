@@ -1,0 +1,1 @@
+{"name":"qa-verify-runtime","private":true,"dependencies":{"playwright":"^1.61.0"}}

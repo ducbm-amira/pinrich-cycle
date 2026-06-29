@@ -1,0 +1,10 @@
+{
+  "name": "pinrich-suite",
+  "description": "Pinrich/Amira dev-workflow skills: the /pinrich-cycle orchestrator plus its sibling build, QA, design-fidelity and code-review skills. One coupled suite — install together.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Duc (Amira)"
+  },
+  "license": "UNLICENSED",
+  "homepage": "https://github.com/ducbm-amira/pinrich-cycle"
+}

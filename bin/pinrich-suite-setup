@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# pinrich-suite setup — run once after installing the plugin.
+# Installs the qa-verify Playwright runtime and reports which external
+# prerequisites still need configuring. Safe to re-run (idempotent).
+set -uo pipefail
+
+# Resolve the plugin root: prefer the value Claude Code injects, else derive
+# from this script's location (bin/ lives at the plugin root).
+ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
+echo "==> pinrich-suite setup (root: $ROOT)"
+
+# --- 1. qa-verify Playwright runtime -----------------------------------------
+QA_RUNTIME="$ROOT/skills/qa-verify/runtime"
+if [ -f "$QA_RUNTIME/package.json" ]; then
+  if command -v npm >/dev/null 2>&1; then
+    echo "==> Installing qa-verify Playwright runtime (npm install in $QA_RUNTIME)"
+    ( cd "$QA_RUNTIME" && npm install --no-audit --no-fund ) \
+      && echo "    ✓ qa-verify runtime ready" \
+      || echo "    ⚠ npm install failed — qa-verify will not be able to drive a browser until this succeeds"
+    echo "==> Installing the Chromium browser for Playwright"
+    ( cd "$QA_RUNTIME" && npx playwright install chromium ) \
+      && echo "    ✓ Chromium installed" \
+      || echo "    ⚠ 'npx playwright install chromium' failed — install it manually before using qa-verify"
+  else
+    echo "    ⚠ npm not found — install Node.js, then re-run this script for qa-verify"
+  fi
+fi
+
+# --- 2. design-fidelity-check external deps (informational) ------------------
+echo "==> design-fidelity-check prerequisites (set these in your shell profile):"
+echo "      export PINRICH_GATE_DIR=/path/to/design-fidelity-gate   # the Phase 1-4 Python gate repo"
+echo "      export PINRICH_GATE_PY=/path/to/uat-toolkit/.venv/bin/python   # the uat-toolkit venv python"
+[ -n "${PINRICH_GATE_DIR:-}" ] && echo "    ✓ PINRICH_GATE_DIR=$PINRICH_GATE_DIR" || echo "    ⚠ PINRICH_GATE_DIR not set — /pinrich-suite:design-fidelity-check will refuse to run until it is"
+[ -n "${PINRICH_GATE_PY:-}" ]  && echo "    ✓ PINRICH_GATE_PY=$PINRICH_GATE_PY"  || echo "    ⚠ PINRICH_GATE_PY not set"
+
+# --- 3. memory note ----------------------------------------------------------
+echo "==> NOTE: /pinrich-suite:pinrich and /pinrich-suite:db read project memory files."
+echo "    Those memory files are NOT shipped in this plugin (they are machine/project-specific)."
+echo "    See README.md > 'Memory' for how to build your own."
+
+echo "==> Setup finished. Run 'pinrich-suite-doctor' anytime to re-check prerequisites."
