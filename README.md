@@ -61,16 +61,32 @@ Requires Node.js on your `PATH`.
 
 ### `design-fidelity-check` — needs the external gate + a Python venv
 This skill shells out to the `design-fidelity-gate` repo (the Phase 1–4 measurement
-engine) and the `uat-toolkit` Python venv. They are **not** bundled here. Point the skill
-at your checkouts via two env vars (add to your shell profile):
+engine) and the `uat-toolkit` Python venv. They are **not** bundled here.
+
+**The gate is coupled to `uat-toolkit` and must be cloned as its sibling** — it hard-codes
+`REPO_ROOT/uat-toolkit/.venv` + `scripts/` and shares that one venv (its own `pyproject`
+declares no runtime deps). Clone both under the same parent:
 
 ```bash
-export PINRICH_GATE_DIR=/path/to/design-fidelity-gate
-export PINRICH_GATE_PY=/path/to/uat-toolkit/.venv/bin/python
+cd ~/Projects                                          # the shared parent
+git clone https://github.com/ducbm-amira/design-fidelity-gate
+# uat-toolkit must already live next to it: ~/Projects/uat-toolkit/.venv
+
+# install the shared venv deps (the gate adds pixelmatch + coloraide, now declared)
+~/Projects/uat-toolkit/.venv/bin/python -m pip install -r ~/Projects/uat-toolkit/requirements.txt
+```
+
+Then point the skill at the checkouts via two env vars (add to your shell profile):
+
+```bash
+export PINRICH_GATE_DIR=$HOME/Projects/design-fidelity-gate
+export PINRICH_GATE_PY=$HOME/Projects/uat-toolkit/.venv/bin/python
 ```
 
 If unset, the skill fails fast with a clear message rather than running against the wrong
-paths.
+paths. Validate with `cd $PINRICH_GATE_DIR && PYTHONPATH=src "$PINRICH_GATE_PY" -m pytest tests -q`
+(a few `extract.py` capture tests stay RED until uat-toolkit's Plan-03 styleSnapshot/selector
+extension lands — see the gate's tests for which).
 
 ### Memory — `pinrich` and `db` expect project memory files
 These two read machine/project-specific memory (codebase map, repo layout, infra routing,

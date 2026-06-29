@@ -28,6 +28,10 @@ fi
 if [ -z "${PINRICH_GATE_DIR:-}" ] || [ -z "${PINRICH_GATE_PY:-}" ]; then
   echo "⚠ pinrich-suite: design-fidelity-check needs PINRICH_GATE_DIR + PINRICH_GATE_PY (see README)"
   miss=1
+elif [ ! -x "$PINRICH_GATE_DIR/../uat-toolkit/.venv/bin/python" ]; then
+  # the gate hard-codes <PINRICH_GATE_DIR>/../uat-toolkit/.venv — without the sibling it can't run
+  echo "⚠ pinrich-suite: no uat-toolkit/.venv sibling next to PINRICH_GATE_DIR — design-fidelity-check will BLOCK (see README)"
+  miss=1
 fi
 
 [ "$miss" -eq 0 ] && echo "✓ pinrich-suite: prerequisites OK"
