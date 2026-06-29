@@ -31,7 +31,7 @@ Một cycle / repo (vì bạn làm xuyên 4 repo song song). File:
 
 `<repo>` là 1 trong: `estimate`, `estimate-sdd`, `estimate-client-sdd`, `pinrich-satei`. Khi chưa biết repo (lúc `start`), dùng tạm `state-pending.md` rồi đổi tên ngay khi route xác định repo.
 
-Lần đầu: `mkdir -p ~/.claude/pinrich-suite:pinrich-cycle`. Format mỗi file:
+Lần đầu: `mkdir -p ~/.claude/pinrich-cycle`. Format mỗi file:
 
 ```markdown
 # Pinrich Cycle State

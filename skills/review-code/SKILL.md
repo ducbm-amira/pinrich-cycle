@@ -1,4 +1,5 @@
 ---
+name: review-code
 description: Pre-commit / pre-PR code review cho Pinrich (3 repo). Tự nhận repo + load đúng CONVENTIONS.md, review theo thứ tự correctness→security→traps→perf→quality, chỉ flag có bằng chứng, không lặp lại cái lint đã bắt. Dùng khi user nói "review giúp tôi đi", "review đi", "check code giúp tôi", "review code", "check before commit", "sắp commit", "kết thúc PR". KHÔNG trigger cho debugging, viết test, hay giải thích code. Verify chạy thật trên app → dùng /pinrich-suite:qa-verify, không phải skill này.
 disable-model-invocation: false
 ---

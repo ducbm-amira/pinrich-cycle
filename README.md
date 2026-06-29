@@ -45,12 +45,19 @@ at session start and only prints warnings — it never blocks.
 
 ## Prerequisites (only some skills need these)
 
-Most skills are pure workflow guidance and work out of the box. Three reach external
-tooling — configure them only if you use those skills:
+Most skills are pure workflow guidance and work out of the box. A few reach external
+tooling — `pinrich-suite-setup` provisions what it can; configure the rest only if you
+use those skills:
+
+### `pinrich-cycle` — needs its helper scripts deployed
+The orchestrator calls `dashboard.mjs` / `budget.mjs` / `verify-artifacts.mjs` (and keeps
+per-repo state) at `~/.claude/pinrich-cycle/`. `pinrich-suite-setup` copies the bundled
+`scripts/pinrich-cycle/*` there. Requires Node.js for the `dashboard` / `budget` subcommands.
 
 ### `qa-verify` — needs a Node + Playwright runtime
-`pinrich-suite-setup` runs `npm install` + `npx playwright install chromium` inside
-`skills/qa-verify/runtime/`. Requires Node.js on your `PATH`.
+`pinrich-suite-setup` deploys the runtime to `~/.claude/skills/qa-verify/runtime/` (the path
+the skill bootstraps from) and runs `npm install` + `npx playwright install chromium` there.
+Requires Node.js on your `PATH`.
 
 ### `design-fidelity-check` — needs the external gate + a Python venv
 This skill shells out to the `design-fidelity-gate` repo (the Phase 1–4 measurement
@@ -76,7 +83,8 @@ skills in "search the codebase live" mode without memory (degraded but functiona
 - First cross-machine export. Validated structurally; not yet battle-tested on a fresh
   teammate machine — expect to iterate on the prerequisite scripts.
 - The skills carry Pinrich/Amira business context in their prose (repo names, infra
-  references). Intended for **internal** distribution, not public.
-- `qa-verify` still references its runtime by the old `~/.claude/skills/qa-verify/runtime`
-  path in places; after install the runtime lives in the plugin dir. `pinrich-suite-setup`
-  installs it in the right place — file an issue if a path mismatch bites you.
+  references). Intended for **internal** distribution.
+- The "inject cycle state every session" behaviour from the original setup is **not** wired
+  by this plugin's SessionStart hook (it only runs `pinrich-suite-doctor`). The `dashboard` /
+  `budget` / `verify-artifacts` subcommands work after `pinrich-suite-setup`; auto-state-on-
+  session-start needs a manual hook in your own `settings.json` if you want it.

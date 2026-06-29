@@ -1,4 +1,5 @@
 ---
+name: qa-verify
 description: AI-assisted manual QA workflow. AI vận hành toàn bộ (đọc PR, generate test plan, chạy Playwright headed, sinh báo cáo), tester chỉ xem browser, confirm intent, làm tay vài TC khi script kẹt. Dành cho manual QA biết business + biết command docker cơ bản, KHÔNG đọc code. Mục tiêu test cái Jest unit/integration test KHÔNG biết — real API, data persistence, UX, multi-user, error feedback. KHÔNG đề xuất thêm Jest test. Dùng khi user nói "qa verify", "verify giúp tôi", "verify PR", "verify fix này", "kiểm tra fix chạy đúng chưa", "QA fix này", "test thử trên app", "confirm fix works". KHÔNG trigger cho viết unit test mới, debugging, hay giải thích code.
 disable-model-invocation: false
 ---

@@ -1,41 +1,56 @@
 #!/usr/bin/env bash
 # pinrich-suite setup — run once after installing the plugin.
-# Installs the qa-verify Playwright runtime and reports which external
-# prerequisites still need configuring. Safe to re-run (idempotent).
+# Deploys the runtime bits the skills expect at fixed ~/.claude paths
+# (the skills reference those paths directly), then reports remaining
+# external prerequisites. Safe to re-run (idempotent).
 set -uo pipefail
 
-# Resolve the plugin root: prefer the value Claude Code injects, else derive
-# from this script's location (bin/ lives at the plugin root).
 ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
-echo "==> pinrich-suite setup (root: $ROOT)"
+echo "==> pinrich-suite setup (plugin root: $ROOT)"
 
-# --- 1. qa-verify Playwright runtime -----------------------------------------
-QA_RUNTIME="$ROOT/skills/qa-verify/runtime"
-if [ -f "$QA_RUNTIME/package.json" ]; then
+# --- 1. pinrich-cycle helper scripts ----------------------------------------
+# The /pinrich-suite:pinrich-cycle orchestrator calls these by absolute path
+# (~/.claude/pinrich-cycle/<script>), and keeps its per-repo state there too.
+CYCLE_DIR="$HOME/.claude/pinrich-cycle"
+mkdir -p "$CYCLE_DIR"
+if [ -d "$ROOT/scripts/pinrich-cycle" ]; then
+  cp "$ROOT/scripts/pinrich-cycle/"*.mjs "$ROOT/scripts/pinrich-cycle/"*.sh "$CYCLE_DIR/" 2>/dev/null
+  chmod +x "$CYCLE_DIR"/*.sh "$CYCLE_DIR"/*.mjs 2>/dev/null
+  echo "    ✓ cycle scripts deployed to $CYCLE_DIR (dashboard / budget / verify-artifacts / serve)"
+else
+  echo "    ⚠ $ROOT/scripts/pinrich-cycle missing — dashboard/budget/verify-artifacts subcommands will not work"
+fi
+
+# --- 2. qa-verify Playwright runtime ----------------------------------------
+# The /pinrich-suite:qa-verify skill bootstraps a Playwright runtime at this
+# exact path, so install it there (not inside the plugin dir).
+QA_RUNTIME="$HOME/.claude/skills/qa-verify/runtime"
+mkdir -p "$QA_RUNTIME"
+if [ -f "$ROOT/skills/qa-verify/runtime/package.json" ]; then
+  cp "$ROOT/skills/qa-verify/runtime/package.json" "$QA_RUNTIME/" 2>/dev/null
+  [ -f "$ROOT/skills/qa-verify/runtime/package-lock.json" ] && cp "$ROOT/skills/qa-verify/runtime/package-lock.json" "$QA_RUNTIME/" 2>/dev/null
   if command -v npm >/dev/null 2>&1; then
-    echo "==> Installing qa-verify Playwright runtime (npm install in $QA_RUNTIME)"
+    echo "==> Installing qa-verify Playwright runtime in $QA_RUNTIME"
     ( cd "$QA_RUNTIME" && npm install --no-audit --no-fund ) \
       && echo "    ✓ qa-verify runtime ready" \
-      || echo "    ⚠ npm install failed — qa-verify will not be able to drive a browser until this succeeds"
-    echo "==> Installing the Chromium browser for Playwright"
+      || echo "    ⚠ npm install failed — qa-verify cannot drive a browser until this succeeds"
     ( cd "$QA_RUNTIME" && npx playwright install chromium ) \
       && echo "    ✓ Chromium installed" \
-      || echo "    ⚠ 'npx playwright install chromium' failed — install it manually before using qa-verify"
+      || echo "    ⚠ 'npx playwright install chromium' failed — install it manually"
   else
-    echo "    ⚠ npm not found — install Node.js, then re-run this script for qa-verify"
+    echo "    ⚠ npm not found — install Node.js, then re-run for qa-verify"
   fi
 fi
 
-# --- 2. design-fidelity-check external deps (informational) ------------------
-echo "==> design-fidelity-check prerequisites (set these in your shell profile):"
+# --- 3. design-fidelity-check external deps (informational) ------------------
+echo "==> design-fidelity-check prerequisites (set in your shell profile):"
 echo "      export PINRICH_GATE_DIR=/path/to/design-fidelity-gate   # the Phase 1-4 Python gate repo"
 echo "      export PINRICH_GATE_PY=/path/to/uat-toolkit/.venv/bin/python   # the uat-toolkit venv python"
-[ -n "${PINRICH_GATE_DIR:-}" ] && echo "    ✓ PINRICH_GATE_DIR=$PINRICH_GATE_DIR" || echo "    ⚠ PINRICH_GATE_DIR not set — /pinrich-suite:design-fidelity-check will refuse to run until it is"
+[ -n "${PINRICH_GATE_DIR:-}" ] && echo "    ✓ PINRICH_GATE_DIR=$PINRICH_GATE_DIR" || echo "    ⚠ PINRICH_GATE_DIR not set — design-fidelity-check will refuse to run until it is"
 [ -n "${PINRICH_GATE_PY:-}" ]  && echo "    ✓ PINRICH_GATE_PY=$PINRICH_GATE_PY"  || echo "    ⚠ PINRICH_GATE_PY not set"
 
-# --- 3. memory note ----------------------------------------------------------
-echo "==> NOTE: /pinrich-suite:pinrich and /pinrich-suite:db read project memory files."
-echo "    Those memory files are NOT shipped in this plugin (they are machine/project-specific)."
-echo "    See README.md > 'Memory' for how to build your own."
+# --- 4. memory note ----------------------------------------------------------
+echo "==> NOTE: /pinrich-suite:pinrich and :db read project memory files that are NOT shipped"
+echo "    (machine/project-specific). See README.md > 'Memory'."
 
 echo "==> Setup finished. Run 'pinrich-suite-doctor' anytime to re-check prerequisites."

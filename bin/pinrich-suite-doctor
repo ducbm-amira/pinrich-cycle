@@ -4,12 +4,16 @@
 # Prints warnings only; never exits non-zero so it can't break a session.
 set -uo pipefail
 
-ROOT="${CLAUDE_PLUGIN_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 miss=0
 
-# qa-verify runtime present?
-if [ -f "$ROOT/skills/qa-verify/runtime/package.json" ] \
-   && [ ! -d "$ROOT/skills/qa-verify/runtime/node_modules" ]; then
+# pinrich-cycle helper scripts deployed?
+if [ ! -f "$HOME/.claude/pinrich-cycle/dashboard.mjs" ]; then
+  echo "⚠ pinrich-suite: cycle helper scripts not deployed — run 'pinrich-suite-setup'"
+  miss=1
+fi
+
+# qa-verify runtime installed at the path the skill expects?
+if [ ! -d "$HOME/.claude/skills/qa-verify/runtime/node_modules" ]; then
   echo "⚠ pinrich-suite: qa-verify Playwright runtime not installed — run 'pinrich-suite-setup'"
   miss=1
 fi
