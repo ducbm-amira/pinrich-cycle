@@ -86,7 +86,7 @@ Mỗi lần đổi state → đọc trước, sửa, ghi đè. Cập nhật `upd
 
 Đây là giới hạn thật của orchestrator mỏng: khi gọi skill con (vd `/pinrich-suite:bug-fix`), control đi vào nó **qua nhiều turn**, và **không có gì tự kéo về đây** để ghi state. Hai lớp phòng vệ:
 
-- **SessionStart hook** (`~/.claude/pinrich-cycle/hooks/session-start.sh`, đã đăng ký global) tự bơm state cycle đang chạy + `next_action` vào context mỗi phiên → state luôn hiện ra dù không gọi skill.
+- **SessionStart hook** (`scripts/pinrich-cycle/session-start.sh`, plugin tự đăng ký qua `hooks/hooks.json`) tự bơm state cycle đang chạy + `next_action` vào context mỗi phiên → state luôn hiện ra dù không gọi skill. Hook chỉ chạy trong cây `~/Projects` và im lặng khi không có cycle.
 - **Git-reconcile** (dưới đây) — git là trọng tài khi state lệch thực tế.
 
 Đừng tin state file một cách mù quáng — **đối chiếu với hiện trạng git** ở mỗi lần được gọi:

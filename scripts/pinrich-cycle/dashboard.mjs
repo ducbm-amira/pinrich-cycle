@@ -99,12 +99,42 @@ function driftStatus(dir, repo) {
 const TRACK_BUILD = ['INIT', 'ROUTE', 'DESIGN', 'BUILD', 'REVIEW', 'QA', 'DONE'];
 const TRACK_BUG = ['INIT', 'ROUTE', 'BUGFIX', 'REVIEW', 'QA', 'DONE'];
 
+// Nhãn tiếng Việt cho từng bước — để người không rành kỹ thuật (PM, khách) đọc hiểu.
+// Tên code (INIT/BUILD…) giữ ở tooltip cho dev.
+const STAGE_VI = {
+  INIT: 'Chuẩn bị', ROUTE: 'Định hướng', GAPAUDIT: 'Đối chiếu',
+  DESIGN: 'Thiết kế', BUILD: 'Dựng trang', BUGFIX: 'Sửa lỗi',
+  REVIEW: 'Soát code', QA: 'Kiểm thử', DONE: 'Hoàn tất',
+};
+
+// Mô tả "kiểu việc" bằng lời thường thay cho track/build_kind.
+function trackVi(c) {
+  const t = (c.track || '').toLowerCase();
+  if (t === 'bug') return 'Sửa lỗi / đổi behavior';
+  if (t === 'build') {
+    const k = (c.build_kind || '').toLowerCase();
+    return k === 'port' ? 'Port trang (Vue → Next)'
+      : k === 'design' ? 'Thiết kế màn mới'
+      : k === 'handoff' ? 'Áp design có sẵn'
+      : 'Dựng trang';
+  }
+  return 'chưa rõ';
+}
+
 function stationsFor(c) {
   const track = (c.track || '').toLowerCase();
-  let stops = track === 'bug' ? TRACK_BUG : TRACK_BUILD;
+  let stops = track === 'bug' ? [...TRACK_BUG] : [...TRACK_BUILD];
   // build mà không thiết kế lại → bỏ ga DESIGN cho gọn
   if (track !== 'bug' && (c.build_kind || '') !== 'design') {
     stops = stops.filter((s) => s !== 'DESIGN');
+  }
+  // Chèn ga "Đối chiếu" (GAPAUDIT) sau Định hướng nếu cycle có cổng gap-audit
+  // (redesign trang đã có) — nếu thiếu, bước GAPAUDIT bị vẽ nhầm sang Chuẩn bị.
+  const gg = (c.gap_gate || '').toLowerCase();
+  const step = (c.step || '').toUpperCase();
+  if (track !== 'bug' && (gg === 'pending' || gg === 'answered' || step === 'GAPAUDIT')) {
+    const ri = stops.indexOf('ROUTE');
+    if (ri >= 0 && !stops.includes('GAPAUDIT')) stops.splice(ri + 1, 0, 'GAPAUDIT');
   }
   return stops;
 }
@@ -129,19 +159,28 @@ function renderCycle(c) {
       else if (i < curIdx) cls = 'st-done';
       else if (i === curIdx) cls = qaFail && stop === 'QA' ? 'st-fail' : 'st-current';
       const connector = i < stops.length - 1 ? `<span class="rail ${i < curIdx || isDone ? 'rail-done' : ''}"></span>` : '';
-      return `<span class="stop ${cls}"><span class="dot"></span><span class="stop-label">${esc(stop)}</span></span>${connector}`;
+      return `<span class="stop ${cls}" title="${esc(stop)}"><span class="dot"></span><span class="stop-label">${esc(STAGE_VI[stop] || stop)}</span></span>${connector}`;
     })
     .join('');
 
-  const statusCls = isDone ? 'badge-done' : qaFail ? 'badge-fail' : qaPass ? 'badge-pass' : 'badge-run';
-  const statusTxt = isDone ? 'DONE' : `${step} · it.${esc(c.iteration || '1')}`;
+  const gatePending = (c.gap_gate || '').toLowerCase() === 'pending';
+  const statusCls = isDone ? 'badge-done' : qaFail ? 'badge-fail' : gatePending ? 'badge-wait' : qaPass ? 'badge-pass' : 'badge-run';
+  const iterTxt = c.iteration && c.iteration !== '1' ? ` · vòng ${esc(c.iteration)}` : '';
+  const statusTxt = isDone
+    ? 'Hoàn tất'
+    : qaFail
+      ? 'Cần sửa lại'
+      : gatePending
+        ? '⏸ Chờ chốt'
+        : `Đang ${STAGE_VI[step] || step}${iterTxt}`;
 
   const lamp = (label, state, txt) =>
     `<span class="lamp lamp-${state}" title="${esc(label)}"><span class="bulb"></span>${esc(txt)}</span>`;
 
   const qaState = qaPass ? 'pass' : qaFail ? 'fail' : 'idle';
+  const qaVi = qaPass ? 'đạt' : qaFail ? 'lỗi' : 'chưa làm';
   const driftSt = c.drift?.state || 'na';
-  const driftTxt = driftSt === 'clear' ? 'sạch' : driftSt === 'drift' ? 'DRIFT' : 'n/a';
+  const driftTxt = driftSt === 'clear' ? 'nguyên vẹn' : driftSt === 'drift' ? 'LỆCH' : 'chưa có';
   const driftLamp = driftSt === 'clear' ? 'pass' : driftSt === 'drift' ? 'fail' : 'idle';
 
   const b = c.budget;
@@ -170,15 +209,15 @@ function renderCycle(c) {
     <p class="task">${esc(c.task || '—')}</p>
     <div class="track">${nodes}</div>
     <div class="readout">
-      <span class="rd"><i>track</i>${esc(c.track || '—')}${c.build_kind && c.build_kind !== '-' ? '/' + esc(c.build_kind) : ''}</span>
-      <span class="rd"><i>branch</i>${esc(c.branch || '—')}</span>
-      ${lamp('Kết quả QA', qaState, 'qa:' + (c.qa_result && c.qa_result !== '-' ? c.qa_result : 'chờ'))}
-      ${lamp('Drift artifact', driftLamp, 'drift:' + driftTxt)}
+      <span class="rd"><i>Kiểu việc</i>${esc(trackVi(c))}</span>
+      ${lamp('Kết quả kiểm thử (QA)', qaState, 'Kiểm thử: ' + qaVi)}
+      ${lamp('Bản dựng có còn khớp file không (drift)', driftLamp, 'File: ' + driftTxt)}
       ${budgetLine}
-      <span class="rd"><i>updated</i>${esc(c.updated || '—')}</span>
+      <span class="rd"><i>Nhánh</i>${esc(c.branch || '—')}</span>
+      <span class="rd"><i>Cập nhật</i>${esc(c.updated || '—')}</span>
     </div>
     ${driftDetail}
-    <div class="next"><span class="next-mark">▸</span> ${esc(c.next_action || 'chưa đặt next_action')}</div>
+    <div class="next"><span class="next-label">Việc tiếp theo</span><span class="next-text">${esc(c.next_action || 'chưa đặt')}</span></div>
   </article>`;
 }
 
@@ -205,18 +244,20 @@ function renderInner(cycles) {
         padding:22px clamp(18px,2.4vw,28px); }
   .pc .cyc-head { display:flex; align-items:center; gap:14px; justify-content:space-between; }
   .pc .repo { font-family:system-ui,sans-serif; font-weight:700; font-size:19px; letter-spacing:-.01em; margin:0; }
-  .pc .badge { font-size:11px; font-weight:700; letter-spacing:.08em; padding:5px 11px; border-radius:999px;
-        white-space:nowrap; }
+  .pc .badge { font-size:11px; font-weight:700; letter-spacing:.04em; padding:5px 11px; border-radius:999px;
+        white-space:nowrap; font-family:system-ui,sans-serif; }
   .pc .badge-run  { background:rgba(242,169,59,.14); color:var(--amber); }
   .pc .badge-fail { background:rgba(229,86,75,.16); color:var(--red); }
   .pc .badge-pass { background:rgba(63,185,140,.16); color:var(--green); }
   .pc .badge-done { background:rgba(63,185,140,.16); color:var(--green); }
-  .pc .task { color:var(--muted); font-size:13px; margin:8px 0 20px; }
+  .pc .badge-wait { background:rgba(120,170,235,.16); color:#86B7F2; }
+  .pc .task { color:var(--muted); font-size:13px; margin:8px 0 20px; font-family:system-ui,sans-serif; line-height:1.5; }
   /* track */
   .pc .track { display:flex; align-items:flex-start; flex-wrap:wrap; gap:0; margin-bottom:22px; }
-  .pc .stop { display:flex; flex-direction:column; align-items:center; gap:7px; width:62px; flex:0 0 auto; }
+  .pc .stop { display:flex; flex-direction:column; align-items:center; gap:7px; width:68px; flex:0 0 auto; }
   .pc .dot { width:15px; height:15px; border-radius:50%; border:2px solid var(--rail); background:var(--surface-2); }
-  .pc .stop-label { font-size:9.5px; letter-spacing:.06em; color:var(--muted); }
+  .pc .stop-label { font-size:10px; line-height:1.25; text-align:center; color:var(--muted);
+        font-family:system-ui,sans-serif; }
   .pc .rail { height:2px; flex:1 1 14px; min-width:14px; background:var(--rail); margin-top:6.5px; }
   .pc .rail-done { background:var(--green); }
   .pc .st-done .dot { background:var(--green); border-color:var(--green); }
@@ -230,7 +271,7 @@ function renderInner(cycles) {
   @media (prefers-reduced-motion: reduce){ .pc .st-current .dot{ animation:none; } }
   /* readout */
   .pc .readout { display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; font-size:12px;
-        padding-top:16px; border-top:1px dashed var(--rail); }
+        padding-top:16px; border-top:1px dashed var(--rail); font-family:system-ui,sans-serif; }
   .pc .rd i { color:var(--muted); font-style:normal; margin-right:7px; }
   .pc .lamp { display:inline-flex; align-items:center; gap:7px; }
   .pc .bulb { width:9px; height:9px; border-radius:50%; }
@@ -240,8 +281,11 @@ function renderInner(cycles) {
   .pc .drift-detail { margin-top:12px; font-size:11.5px; color:var(--red);
         background:rgba(229,86,75,.08); border-left:2px solid var(--red); padding:9px 12px; border-radius:0 6px 6px 0; }
   .pc .next { margin-top:16px; font-size:13px; color:var(--text); background:var(--surface-2);
-        padding:11px 14px; border-radius:8px; }
-  .pc .next-mark { color:var(--amber); font-weight:700; margin-right:6px; }
+        padding:11px 14px; border-radius:8px; display:flex; gap:10px; align-items:baseline;
+        font-family:system-ui,sans-serif; }
+  .pc .next-label { color:var(--amber); font-weight:700; font-size:11px; letter-spacing:.04em;
+        white-space:nowrap; border-right:1px solid var(--rail); padding-right:10px; }
+  .pc .next-text { color:var(--text); }
   .pc .empty { color:var(--muted); font-size:14px; }
   .pc .foot { color:var(--muted); font-size:11px; margin-top:30px; border-top:1px solid var(--rail); padding-top:14px; }
   </style>`;
@@ -254,10 +298,10 @@ function renderInner(cycles) {
   <div class="pc">
     <header class="top">
       <h1 class="brand"><span class="sig"></span>pinrich<b>·</b>cycle</h1>
-      <span class="sub">${active.length} tuyến đang chạy · ${cycles.length} tổng · bảng tín hiệu trạng thái</span>
+      <span class="sub">${active.length} việc đang chạy · ${cycles.length} tổng cộng — bảng theo dõi tiến độ</span>
     </header>
     ${body}
-    <p class="foot">Sinh từ state-*.md + artifacts-*.json. Đèn drift = verify-artifacts. Read-only.</p>
+    <p class="foot">Bảng tự cập nhật theo tiến độ công việc · chỉ hiển thị, không chỉnh sửa gì.</p>
   </div>`;
 }
 
@@ -301,7 +345,9 @@ async function serve(port) {
   let timer;
   try {
     fs.watch(args.dir, (_e, fname) => {
-      if (fname && !/^(state-.*\.md|artifacts-.*\.json)$/.test(fname)) return;
+      // Nới filter: bắt cả tên file tạm của atomic-rename (state-x.md.tmp, .state-x.md.swp)
+      // và sự kiện fname rỗng (Linux inotify đôi khi không báo tên). Bỏ neo ^...$.
+      if (fname && !/(state-.*\.md|artifacts-.*\.json)/.test(fname)) return;
       clearTimeout(timer);
       timer = setTimeout(() => {
         for (const res of clients) res.write('data: reload\n\n');

@@ -18,6 +18,12 @@ if [ ! -d "$HOME/.claude/skills/qa-verify/runtime/node_modules" ]; then
   miss=1
 fi
 
+# jq present? (the SessionStart state-pump hook needs it)
+if ! command -v jq >/dev/null 2>&1; then
+  echo "⚠ pinrich-suite: 'jq' not found — the cycle state-pump SessionStart hook will be a no-op until installed"
+  miss=1
+fi
+
 # design-fidelity-check env vars?
 if [ -z "${PINRICH_GATE_DIR:-}" ] || [ -z "${PINRICH_GATE_PY:-}" ]; then
   echo "⚠ pinrich-suite: design-fidelity-check needs PINRICH_GATE_DIR + PINRICH_GATE_PY (see README)"

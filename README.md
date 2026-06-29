@@ -84,7 +84,8 @@ skills in "search the codebase live" mode without memory (degraded but functiona
   teammate machine — expect to iterate on the prerequisite scripts.
 - The skills carry Pinrich/Amira business context in their prose (repo names, infra
   references). Intended for **internal** distribution.
-- The "inject cycle state every session" behaviour from the original setup is **not** wired
-  by this plugin's SessionStart hook (it only runs `pinrich-suite-doctor`). The `dashboard` /
-  `budget` / `verify-artifacts` subcommands work after `pinrich-suite-setup`; auto-state-on-
-  session-start needs a manual hook in your own `settings.json` if you want it.
+- The plugin's SessionStart hook runs two things: `pinrich-suite-doctor` (prereq check) and
+  `scripts/pinrich-cycle/session-start.sh`, which injects any running cycle's state +
+  `next_action` into context. The state-pump only fires inside the `~/Projects` tree and stays
+  silent when no cycle is active; it needs `jq` on `PATH`. The `dashboard` / `budget` /
+  `verify-artifacts` subcommands work after `pinrich-suite-setup`.
