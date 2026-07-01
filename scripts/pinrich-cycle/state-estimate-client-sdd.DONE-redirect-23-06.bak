@@ -1,0 +1,15 @@
+# Pinrich Cycle State
+
+- task: Fix redirect 「ログイン画面へ」 sau reset password — thread ?redirect= qua 6 điểm/3 repo
+- track: bug
+- repo: estimate-client-sdd
+- branch: feat/create-password-policy
+- step: DONE
+- build_kind: -
+- iteration: 1
+- context_ready: yes
+- qa_result: pass
+- cost_budget_usd:
+- next_action: DONE — QA pass, cycle đóng (2026-06-25). Redirect ?redirect= thread qua 6 điểm/3 repo đã deploy develop + verify.
+- notes: Multi-repo 3 nhánh — FE feat/create-password-policy, BE chore/forgot-password-esbuild-deploy, lambda feat/forgot-password-lambda. Review ✅ sạch (không bug; open-redirect+HTML-injection chặn; backward-compat). 1 obs pre-existing: emailEnc base64 chưa encode (ngoài scope). Lambda thật trên develop = bản estimate-sdd nodejs22 (xem [[pinrich-forgot-password-lambda]]). Thiếu deploy 1 trong 2 → redirect vẫn rớt.
+- updated: 2026-06-25

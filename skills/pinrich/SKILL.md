@@ -11,9 +11,9 @@ Trả lời bằng tiếng Việt.
 
 Skill giúp developer nhanh chóng hiểu **codebase + business** của Pinrich. 3 chế độ:
 
-- `/pinrich-suite:pinrich` — Load full context từ memory files
-- `/pinrich-suite:pinrich <keyword>` — Tìm kiếm business + code theo keyword
-- `/pinrich-suite:pinrich update` — Scan codebase và cập nhật memory files
+- `/pinrich` — Load full context từ memory files
+- `/pinrich <keyword>` — Tìm kiếm business + code theo keyword
+- `/pinrich update` — Scan codebase và cập nhật memory files
 
 ---
 
@@ -33,7 +33,7 @@ Pinrich gồm **trio estimate (3 repo migration Strangler Fig legacy→SDD)** + 
 - Nói tới Next.js/React/route mới (/accounts,/users,/deed)/openapi → search `estimate-client-sdd/src/{app,views,lib}`.
 - Nói tới **satei / tìm kiếm-định giá BĐS / bb-search / heatmap / REINS / PN-774** → đọc `project_satei_map.md` rồi search `pinrich-satei/{server,client}`. ⚠️ satei DB + stack riêng, KHÔNG dùng OpenAPI SDK, KHÔNG phải bước SDD — đừng gộp với trio. Lưu ý "satei" cũng là term legacy trong estimate; nếu hỏi về tính năng định giá *bên trong CRM estimate* thì là repo `estimate`, còn app định giá độc lập là `pinrich-satei`.
 - Nói tới **trang search / tìm kiếm BĐS / property search / 物件検索 / filter giá-diện tích-築年-媒介 / kết quả-map-detail** → có 2 hệ search BĐS RIÊNG (DB tách rời, cùng schema scraped): legacy `estimate` đọc `project_estimate_search.md` (form MultiSearch → `/properties/multi_search`); search mới `pinrich-satei` (BB/PN-774) đọc `project_satei_search_redesign.md` (`/api/search`). Xác định repo trước khi search code. ⚠️ "satei" bên trong estimate = AI査定 nội bộ (url_share_user), KHÁC app pinrich-satei. **satei = "STOCK" service** (estimate-sdd/legacy gọi `/api/search/*` qua `STOCK_URL`/`VITE_STOCK_URL`); estimate-sdd KHÔNG có module property search.
-- Nói tới **port trang search sang FE SDD / client-sdd search** → đọc `project_search_port_sdd.md` (task port estimate→client-sdd, backend đích = satei `/api/search`, quyết định kiến trúc, khác biệt khi port). Dùng skill `/pinrich-suite:sdd-port-page`.
+- Nói tới **port trang search sang FE SDD / client-sdd search** → đọc `project_search_port_sdd.md` (task port estimate→client-sdd, backend đích = satei `/api/search`, quyết định kiến trúc, khác biệt khi port). Dùng skill `/sdd-port-page`.
 - Còn lại (business cũ, Vue, Express, share/) → repo `estimate` như cũ.
 - **Nếu không rõ context** → nói rõ feature đó tồn tại ở repo nào (legacy vs SDD vs satei) và hỏi/đưa cả hai, kèm trạng thái migrate (theo bảng mapping trong `project_sdd_architecture.md`).
 
@@ -300,7 +300,7 @@ Scan codebase **cả 4 repo** để cập nhật memory files:
 12. **Routes client**: `ls ~/Projects/pinrich-satei/client/` (routes Vue, bb-search/bb-result) → thêm route/màn mới; cập nhật `project_satei_search_redesign.md` nếu đổi filter/DTO/cột BbResult (PN-774)
 
 ### ⚠️ Post-step BẮT BUỘC khi port/build/đổi route ở client-sdd (v2)
-Theo `feedback_maintain_v2_page_map.md` — mỗi khi `/pinrich-suite:sdd-port-page`, `/pinrich-suite:design-screen`, apply-design-handoff hoặc sửa route tay ở **estimate-client-sdd**, tự cập nhật (không chờ user nhắc):
+Theo `feedback_maintain_v2_page_map.md` — mỗi khi `/sdd-port-page`, `/design-screen`, apply-design-handoff hoặc sửa route tay ở **estimate-client-sdd**, tự cập nhật (không chờ user nhắc):
 - `estimate/docs/local-ui-switch.md` — section **Page map V1↔V2** (tên feature + URL V1 + URL V2 + ghi chú auth/host/param/stub)
 - memory `project_new_fe_owner_and_local_run.md`
 Nguyên tắc URL: trang **port thay legacy → path V2 = path V1** (chỉ khác host/port khi dev); **feature mới → URL mới**; trang chưa wire data → đánh dấu **stub**. `local-ui-switch.md` là doc untracked → `git pull` có thể revert fix tracked (vd dev-bypass `layout.tsx`), phải áp lại.
@@ -322,7 +322,7 @@ Sau khi update, báo cáo ngắn gọn: thay đổi gì, file nào đã cập nh
 
 # ⚠️ Map drift đã biết (kiểm 2026-06-22)
 
-Memory map sinh ở session cũ; những điểm sau đã LỆCH so với repo thật — tin mục này trước memory file tương ứng, và sửa map khi `/pinrich-suite:pinrich update`.
+Memory map sinh ở session cũ; những điểm sau đã LỆCH so với repo thật — tin mục này trước memory file tương ứng, và sửa map khi `/pinrich update`.
 
 **estimate (legacy):**
 - `controllers/Rakucore/` **KHÔNG tồn tại** — `business_code_map` #12 ghi sai. Logic Rakucore rải ở `controllers/Clients` + services + migrations `rakucore_*` (mới nhất `20260610 rakucore_synced_at`).

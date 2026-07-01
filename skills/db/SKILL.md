@@ -22,8 +22,8 @@ basename "$PWD"; grep -m1 '"name"' package.json 2>/dev/null
 
 | Repo / dấu hiệu | Target DB | Cách kết nối |
 |---|---|---|
-| **estimate** (package `estimate`) | **RDS dev** (chia sẻ, MySQL 8) | docker `mysql:8` → RDS endpoint, user/pass đọc từ `docker-compose.yaml` |
-| **estimate-sdd** (package `pinrich-api`) | **DB local container** `:43334` (dùng riêng, disposable) | qua container `db` đang chạy, user/pass đọc từ `docker-compose.yaml` |
+| **estimate** (package `estimate`) | **RDS dev** (chia sẻ, MySQL 8) | docker `mysql:8` → RDS endpoint, user `admin` |
+| **estimate-sdd** (package `pinrich-api`) | **DB local container** `:43334` (dùng riêng, disposable) | qua container `db` đang chạy, user `estimate` |
 | **estimate-client-sdd** (package `pinrich-account-management`) | Không có DB trực tiếp | Báo user: query phải làm ở repo `estimate-sdd`, hoặc gọi API `:8888` |
 
 ### A. Repo `estimate` → RDS dev
@@ -33,20 +33,17 @@ basename "$PWD"; grep -m1 '"name"' package.json 2>/dev/null
 # Nạp creds vào biến (KHÔNG in password). Có thể xem riêng HOST/USERNAME nếu cần:
 grep -E "^\s*DB_(HOST|USERNAME):" docker-compose.yaml | grep -v '#'
 RDS=$(grep -E "^\s*DB_HOST:" docker-compose.yaml | grep -v '#' | awk '{print $2}')
-USR=$(grep -E "^\s*DB_USERNAME:" docker-compose.yaml | grep -v '#' | awk '{print $2}')
 PW=$(grep -E "^\s*DB_PASSWORD:" docker-compose.yaml | grep -v '#' | awk '{print $2}')
-DBQ() { docker run --rm mysql:8 mysql -h "$RDS" -u "$USR" -p"$PW" egent_data -e "$1" 2>/dev/null; }
+DBQ() { docker run --rm mysql:8 mysql -h "$RDS" -u admin -p"$PW" egent_data -e "$1" 2>/dev/null; }
 # Adminer (NẾU có chạy ở :8080 — không do compose repo nào định nghĩa, xem flag dưới):
-#   http://localhost:8080 → System=MySQL, Server=$RDS, user=$USR, DB=egent_data
+#   http://localhost:8080 → System=MySQL, Server=$RDS, user=admin, DB=egent_data
 ```
 > ⚠️ FLAG (chưa xác minh): KHÔNG repo nào (`estimate`, `estimate-sdd`, `estimate-client-sdd`) định nghĩa service `adminer` trong `docker-compose*.y*ml`. Nguồn Adminer :8080 không xác định được — có thể do user chạy tay ngoài compose. Dùng khi chắc nó đang chạy, đừng coi nó thuộc compose repo `estimate`.
 
 ### B. Repo `estimate-sdd` → DB local container (:43334)
-DB chạy trong container `db` (service name compose = `pinrich-db`, container_name = `db`), user/pass đọc từ `docker-compose.yaml` của estimate-sdd (KHÔNG hardcode). **Phải `docker compose up -d pinrich-db` trong estimate-sdd trước** (service name là `pinrich-db`, không phải `db`; kiểm tra `docker ps | grep 43334`; nếu chưa lên thì báo user start). Kết nối từ host:
+DB chạy trong container `db` (service name compose = `pinrich-db`, container_name = `db`, image `pinrich/estimate-db:develop`), user/pass `estimate`/`estimate`. **Phải `docker compose up -d pinrich-db` trong estimate-sdd trước** (service name là `pinrich-db`, không phải `db`; kiểm tra `docker ps | grep 43334`; nếu chưa lên thì báo user start). Kết nối từ host:
 ```bash
-# creds đọc từ docker-compose.yaml của estimate-sdd; KHÔNG hardcode user/pass
-USR=$(grep -E "^\s*DB_USERNAME:" docker-compose.yaml | grep -v '#' | awk '{print $2}'); PW=$(grep -E "^\s*DB_PASSWORD:" docker-compose.yaml | grep -v '#' | awk '{print $2}')
-DBQ() { docker run --rm --network host mysql:8 mysql -h 127.0.0.1 -P 43334 -u "$USR" -p"$PW" egent_data -e "$1" 2>/dev/null; }
+DBQ() { docker run --rm --network host mysql:8 mysql -h 127.0.0.1 -P 43334 -u estimate -pestimate egent_data -e "$1" 2>/dev/null; }
 # (PROCESS_DB ở :43333 — chỉ chạm khi user yêu cầu rõ)
 # Schema Drizzle (nguồn sự thật v2): estimate-sdd/src/common/database/schema/schema.ts
 ```

@@ -1,6 +1,5 @@
 ---
-name: review-code
-description: Pre-commit / pre-PR code review cho Pinrich (3 repo). Tự nhận repo + load đúng CONVENTIONS.md, review theo thứ tự correctness→security→traps→perf→quality, chỉ flag có bằng chứng, không lặp lại cái lint đã bắt. Dùng khi user nói "review giúp tôi đi", "review đi", "check code giúp tôi", "review code", "check before commit", "sắp commit", "kết thúc PR". KHÔNG trigger cho debugging, viết test, hay giải thích code. Verify chạy thật trên app → dùng /pinrich-suite:qa-verify, không phải skill này.
+description: Pre-commit / pre-PR code review cho Pinrich (3 repo). Tự nhận repo + load đúng CONVENTIONS.md, review theo thứ tự correctness→security→traps→perf→quality, chỉ flag có bằng chứng, không lặp lại cái lint đã bắt. Dùng khi user nói "review giúp tôi đi", "review đi", "check code giúp tôi", "review code", "check before commit", "sắp commit", "kết thúc PR". KHÔNG trigger cho debugging, viết test, hay giải thích code. Verify chạy thật trên app → dùng /qa-verify, không phải skill này.
 disable-model-invocation: false
 ---
 
@@ -13,7 +12,7 @@ Trả lời bằng tiếng Việt. Review **diff**, không review cả branch.
 1. **Lint/Prettier đã lo phần máy móc → KHÔNG review lại nó.** `semi`, indent, import order, `no-console`, `prefer-const`, format... đã bị `lint-staged` chặn lúc commit. Bê mấy cái này vào report = nhiễu, che mất vấn đề thật. Chỉ nhắc nếu nghi lint KHÔNG chạy.
 2. **Thứ tự ưu tiên: Correctness → Security → Project traps → Performance → Quality.** Bug logic + lỗ hổng quan trọng hơn readability. Soát theo thứ tự này, đừng sa đà readability trước.
 3. **Chỉ flag khi có BẰNG CHỨNG trong diff.** Không suy đoán, không nit cho có. Mỗi finding phải chỉ được `file:line` + tại sao sai + cách fix cụ thể. Không chắc → đặt câu hỏi (Question), đừng khẳng định Bug.
-4. **Verify chạy-thật KHÔNG phải việc của skill này.** Đây là static review. Muốn chứng minh fix chạy đúng trên app thật (API/DB/UX/multi-user) → bàn giao sang `/pinrich-suite:qa-verify`. Đừng tự generate Playwright ở đây.
+4. **Verify chạy-thật KHÔNG phải việc của skill này.** Đây là static review. Muốn chứng minh fix chạy đúng trên app thật (API/DB/UX/multi-user) → bàn giao sang `/qa-verify`. Đừng tự generate Playwright ở đây.
 
 ---
 
@@ -40,7 +39,7 @@ Từ đường dẫn file, xác định **repo + stack + file convention** (mỗ
 
 Tóm tắt 2–3 dòng: thay đổi này **làm gì**, đụng repo/layer nào, là feature mới hay sửa cái có sẵn. Rồi mới review.
 
-> Nếu cần hiểu sâu business/feature đang đụng → `/pinrich-suite:pinrich <keyword>` (memory map), đừng tự đoán flow.
+> Nếu cần hiểu sâu business/feature đang đụng → `/pinrich <keyword>` (memory map), đừng tự đoán flow.
 
 ---
 
@@ -82,7 +81,7 @@ Tóm tắt 2–3 dòng: thay đổi này **làm gì**, đụng repo/layer nào, 
 - Server state (TanStack Query) vs client state (Jotai/form) tách đúng chưa; 1 file 1 component; business logic không rò xuống FE.
 - Token 401 → redirect `/{segment}/login` còn đúng không.
 - **i18n** (grounded — đừng false-flag): grep `useTranslation` trong `src/views` TRƯỚC. Nếu repo thực sự dùng i18next ở view → chuỗi mới nên theo. Thực tế hiện tại: views hardcode JP (i18next có trong deps nhưng CHƯA wire vào view) → hardcode JP là đúng pattern repo, KHÔNG flag.
-- **JP number-format trap** (`[Trap]`, ref memory `pin-numbers-ja-jp`): grep diff `toLocaleString(` — thiếu `'ja-JP'` = mất locale (VN ra dấu chấm thay phẩy); và số đổ thẳng ra template/JSX không qua format (vd `{price}万円` với `price` number → thiếu phẩy ≥1000). Đây là nửa-bắt-được-tĩnh của `DOMAIN-RENT`/`DESIGN-NUMFMT-001`; nửa render thì `/pinrich-suite:qa-verify` (jp_domain_check) + `sdd-port-page` P6 lo.
+- **JP number-format trap** (`[Trap]`, ref memory `pin-numbers-ja-jp`): grep diff `toLocaleString(` — thiếu `'ja-JP'` = mất locale (VN ra dấu chấm thay phẩy); và số đổ thẳng ra template/JSX không qua format (vd `{price}万円` với `price` number → thiếu phẩy ≥1000). Đây là nửa-bắt-được-tĩnh của `DOMAIN-RENT`/`DESIGN-NUMFMT-001`; nửa render thì `/qa-verify` (jp_domain_check) + `sdd-port-page` P6 lo.
 - **React hooks**: `useEffect` có cleanup cho listener/interval/subscription (rò bộ nhớ) không; dep array thiếu/dư → stale state / vòng lặp vô hạn.
 - **a11y** (web search 2025: chỗ FE review hay trượt): element đúng ngữ nghĩa (`button` cho action, `a` cho nav); input có label; error gắn với field (`aria-describedby`); focus/keyboard (Tab/Enter/Space) dùng được; component custom (modal/dropdown) có ARIA role/state.
 
@@ -140,7 +139,7 @@ Intent-word: `[Bug]` `[Security]` `[Trap]` `[Issue]` `[Suggestion]` `[Nit]` `[Qu
 ## Step 7 — Test & bàn giao
 
 - **Jest unit/integration cần thêm** (việc của dev): với mỗi logic/exception ở Step 1–2, đề xuất test case ngắn — mô tả + input + expected. Ưu tiên ca **edge/error** mà code mới động vào, và ca **regression** nếu là sửa feature cũ.
-- **Verify chạy thật trên app** (API thật + DB persist + UX + multi-user): KHÔNG làm ở đây → **bàn giao `/pinrich-suite:qa-verify`**. Một dòng gợi ý: "Muốn chứng minh fix chạy đúng trên app thật → chạy `/pinrich-suite:qa-verify` cho branch này."
+- **Verify chạy thật trên app** (API thật + DB persist + UX + multi-user): KHÔNG làm ở đây → **bàn giao `/qa-verify`**. Một dòng gợi ý: "Muốn chứng minh fix chạy đúng trên app thật → chạy `/qa-verify` cho branch này."
 
 ---
 
@@ -159,4 +158,4 @@ Intent-word: `[Bug]` `[Security]` `[Trap]` `[Issue]` `[Suggestion]` `[Nit]` `[Qu
 - [ ] **Anti over-engineering**: tách/abstraction chỉ khi ≥2–3 chỗ dùng thật (YAGNI), không generic hoá cho tương lai.
 - [ ] FE React/Vue → đã soát hooks cleanup + dep array, a11y (label/keyboard/aria), i18n (không hardcode chuỗi).
 - [ ] **JP number-format**: grep `toLocaleString(` thiếu `'ja-JP'` + số đổ thẳng ra template không format (memory `pin-numbers-ja-jp`).
-- [ ] Đã bàn giao verify-chạy-thật sang `/pinrich-suite:qa-verify`, không tự generate Playwright ở đây.
+- [ ] Đã bàn giao verify-chạy-thật sang `/qa-verify`, không tự generate Playwright ở đây.

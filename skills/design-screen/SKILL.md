@@ -91,7 +91,7 @@ Ngay khi qua Cổng 2:
 
 → Gọi **`apply-design-handoff`** với bundle đã đóng băng (Pha C). Skill đó lo fetch/map/reuse-first/wire-data/verify.
 - Visual bám **bản đóng băng**; data/logic bám Vue/`estimate-sdd`.
-- **Cổng 4 (acceptance):** code chạy ↔ bản đóng băng, PC & SP, đúng `CLAUDE.md` → bàn giao `/pinrich-suite:qa-verify`, `/pinrich-suite:review-code`.
+- **Cổng 4 (acceptance):** code chạy ↔ bản đóng băng, PC & SP, đúng `CLAUDE.md` → bàn giao `/qa-verify`, `/review-code`.
 
 ---
 

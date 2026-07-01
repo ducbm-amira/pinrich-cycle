@@ -58,7 +58,7 @@ Bundle thường: `README.md` · `chats/chat*.md` · `project/*.html` + `colors_
 
 - `tsc --noEmit` sạch (override tsbuildinfo nếu permission: `--incremental false`).
 - Render thật (docker dev; port phụ nếu sợ đụng service đang chạy) → screenshot từng màn đối chiếu prototype.
-- Hành vi/edge → bàn giao **`/pinrich-suite:qa-verify`**. Trước commit → **`/pinrich-suite:review-code`** (đặc biệt reuse-first + a11y + DRY).
+- Hành vi/edge → bàn giao **`/qa-verify`**. Trước commit → **`/review-code`** (đặc biệt reuse-first + a11y + DRY).
 - Liệt kê rõ phần **ngoài scope / NOT-done** (BE/infra/QA tay) để user xếp ticket.
 
 ---
@@ -72,4 +72,4 @@ Bundle thường: `README.md` · `chats/chat*.md` · `project/*.html` + `colors_
 - [ ] Token handoff ↔ `global.css` — dùng atom/token repo, không bê CSS prototype.
 - [ ] Wire API đúng nguồn (SDD vs legacy) — verify, không mặc định.
 - [ ] Phần ngoài scope → ticket riêng, không gộp PR.
-- [ ] tsc sạch + render đối chiếu + bàn giao /pinrich-suite:qa-verify + /pinrich-suite:review-code.
+- [ ] tsc sạch + render đối chiếu + bàn giao /qa-verify + /review-code.

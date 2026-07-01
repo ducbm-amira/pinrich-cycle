@@ -1,5 +1,4 @@
 ---
-name: bug-fix
 description: Quy trình fix bug hoặc thay đổi behavior. Enforce 4 phase theo thứ tự — investigate, prepare, implement, verify. Dùng khi user nói "fix bug", "sửa bug", "làm task", "triển khai task", "implement task", hoặc paste Trello/task description. KHÔNG trigger cho debugging, explaining code, hay quick refactor.
 disable-model-invocation: false
 ---
