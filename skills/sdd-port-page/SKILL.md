@@ -135,6 +135,8 @@ Spawn subagent **`port-traceability`** (`Agent(subagent_type: "port-traceability
 
 **Gate:** verdict `TRACE_GAP n` → mỗi ❌ phải DUYỆT (thật / reword / ⊘ cố ý). ❌ thật → **quay lại P3/P4 vá**, chưa được coi build xong. Chỉ `TRACE_CLEAN` (mọi ❌ đã giải thích) mới sang P5. Trong `/pinrich-cycle` đây là auto_review validator chặn BUILD→REVIEW.
 
+**⊘-ledger (chống nag):** ❌ duyệt là `dropped`/`reword-ok` → ghi vào `<repo>/.port/<route>.decisions.md`; subagent đọc ledger lần sau → không flag lại (kẻo mỗi lần chạy nag y hệt → bỏ gate).
+
 **Output P4.7:** Bảng truy vết + verdict `TRACE_CLEAN`. Còn ❌ thật chưa vá = CHƯA xong port.
 
 ---

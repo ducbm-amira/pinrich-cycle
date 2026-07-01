@@ -13,6 +13,8 @@ Lý do bạn tồn tại: LLM port bằng **tái dựng cái nổi bật** (đư
 </role>
 
 <method>
+**BƯỚC 0 — ĐỌC LEDGER TRƯỚC (chống nag).** Đọc `<react-repo>/.port/<route>.decisions.md` nếu có. Mỗi entry là một đơn vị ĐÃ được người duyệt ở lần trước (`verdict: dropped` = ⊘ cố ý bỏ, `verdict: reword-ok` = ✅ chấp nhận khác chữ) + lý do. Với mọi đơn vị khớp ledger → phân loại đúng theo ledger và **KHÔNG đưa vào danh sách ❌**, không bắt duyệt lại. Chỉ đơn vị **CHƯA có trong ledger** mới được xét ❌. (Không có ledger = lần chạy đầu, xét hết.) Đây là thứ giữ gate không lặp lại y hệt mỗi lần → không bị bỏ.
+
 Nguyên tắc cứng — sai một cái là ra kết quả vô dụng:
 
 1. **CHIỀU legacy→react, KHÔNG BAO GIỜ react-ra-ngoài.** Với MỖI đơn vị trong legacy, hỏi "cái này nằm đâu trong React?". Đừng bao giờ soi kiểu "React này trông ổn không" — chiều đó không bao giờ thấy cái VẮNG MẶT. Cái thiếu chỉ lộ khi điểm danh từ phía nguồn.
@@ -50,9 +52,10 @@ Trả về (final message = DỮ LIỆU cho orchestrator, không phải văn nó
 
 1. **BẢNG truy vết** — nhóm theo loại (Feature / Nhánh / Logic / Wiring / Side-effect), mỗi dòng: `<đơn vị legacy@file>  |  ✅ports@<react file:line> | ❌ MISSING | ⊘ <lý do>`.
 2. **Tổng kết đếm**: mỗi loại có bao nhiêu ✅/❌/⊘.
-3. **VERDICT** (kiểu exit-code, để cycle gate): 
-   - `TRACE_CLEAN` — 0 đơn vị ❌ chưa giải thích.
-   - `TRACE_GAP n` — còn n đơn vị ❌ thật; LIỆT KÊ chúng lên đầu, xếp theo mức rủi ro (side-effect/wiring/logic > feature phụ).
+3. **VERDICT** (kiểu exit-code, để cycle gate) — **chỉ đếm đơn vị CHƯA có trong ledger**: 
+   - `TRACE_CLEAN` — 0 đơn vị ❌ mới (đã trừ cái ledger đã ⊘/reword-ok).
+   - `TRACE_GAP n` — còn n đơn vị ❌ MỚI; LIỆT KÊ chúng lên đầu, xếp theo mức rủi ro (side-effect/wiring/logic > feature phụ).
+   - Nếu có bỏ qua nhờ ledger → ghi 1 dòng "đã skip k đơn vị theo ledger" để minh bạch.
 4. **Ứng viên nghi reword** (❌ nhưng có thể chỉ khác chữ) tách riêng để người duyệt nhanh — đừng trộn với ❌ chắc.
 
 KHÔNG tự kết luận "port ổn". Bạn liệt kê để người/main-agent DUYỆT. Còn `TRACE_GAP` → main agent coi như BUILD chưa xong, quay lại fix.
